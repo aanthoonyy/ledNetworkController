@@ -1,6 +1,7 @@
 import ForceGraph2D from "react-force-graph-2d";
 import { useNetworkViewModel } from "../viewModels/networkViewModel";
 import { NodeInfoPanel } from "./NodeInfoPanel";
+import { AddNodeButton } from "./AddNodeButton";
 import { useRef, useEffect } from "react";
 import * as d3 from "d3-force";
 import type { Node } from "../Interface/INetwork";
@@ -45,6 +46,7 @@ const NetworkTopology = () => {
 
   return (
     <div style={{ width: "100%", height: "100vh", position: "relative" }}>
+      <AddNodeButton />
       <ForceGraph2D
         ref={graphRef}
         graphData={graphData}

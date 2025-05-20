@@ -103,6 +103,41 @@ const handleClearSelection = () => ({
   selectedNodes: new Set<string>()
 });
 
+const createPurpleNode = (): Node => ({
+  id: `purple-${Date.now()}`,
+  name: `Purple Node ${Math.floor(Math.random() * 1000)}`,
+  type: "host",
+  ip: randomIP(),
+  color: "#9c27b0", // Material UI purple
+  val: 12,
+});
+
+const handleAddPurpleNode = (state: Network) => {
+  const newNode = createPurpleNode();
+  const newNodes = [...state.graphData.nodes, newNode];
+  
+  const newLinks = [...state.graphData.links];
+  const numConnections = Math.floor(Math.random() * 3) + 1; // 1-3 connections
+  const availableNodes = newNodes.filter(n => n.id !== newNode.id);
+  
+  for (let i = 0; i < numConnections; i++) {
+    if (availableNodes.length === 0) break;
+    const randomIndex = Math.floor(Math.random() * availableNodes.length);
+    newLinks.push({
+      source: newNode.id,
+      target: availableNodes[randomIndex].id
+    });
+    availableNodes.splice(randomIndex, 1);
+  }
+
+  return {
+    graphData: {
+      nodes: newNodes,
+      links: newLinks
+    }
+  };
+};
+
 export const useNetworkStore = create<Network>((set) => ({
   graphData: generateGraphData(),
   selectedNode: null,
@@ -110,4 +145,5 @@ export const useNetworkStore = create<Network>((set) => ({
   setSelectedNode: (node) => set({ selectedNode: node }),
   toggleNodeSelection: (nodeId, isShiftKey) => set((state) => handleNodeSelection(state, nodeId, isShiftKey)),
   clearSelection: () => set(handleClearSelection),
+  addPurpleNode: () => set((state) => handleAddPurpleNode(state)),
 }));

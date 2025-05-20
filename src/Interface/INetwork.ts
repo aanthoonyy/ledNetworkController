@@ -24,6 +24,7 @@ export interface Network {
   setSelectedNode: (node: Node | null) => void;
   toggleNodeSelection: (nodeId: string, isShiftKey: boolean) => void;
   clearSelection: () => void;
+  addPurpleNode: () => void;
 }
 
 export interface NodeInfoPanelProps {
