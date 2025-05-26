@@ -1,7 +1,7 @@
 export interface Node {
   id: string;
   name: string;
-  type: "switch" | "host";
+  type: "switch" | "host" | "arduino";
   ip: string;
   color: string;
   val: number;
@@ -24,7 +24,8 @@ export interface Network {
   setSelectedNode: (node: Node | null) => void;
   toggleNodeSelection: (nodeId: string, isShiftKey: boolean) => void;
   clearSelection: () => void;
-  addPurpleNode: () => void;
+  updateNode: (nodeId: string, state: 'on' | 'off', color: string) => void;
+  updateAllNodes: () => void;
 }
 
 export interface NodeInfoPanelProps {
