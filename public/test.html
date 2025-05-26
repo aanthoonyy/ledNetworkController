@@ -29,6 +29,7 @@
       let ws = null;
       const status = document.getElementById("status");
       const log = document.getElementById("log");
+      let lastStartTime = null;
 
       function connect() {
         ws = new WebSocket("ws://" + window.location.host + "/ws");
@@ -41,7 +42,14 @@
           logMessage("Disconnected from server");
           setTimeout(connect, 5000);
         };
-        ws.onmessage = (event) => logMessage("Received: " + event.data);
+        ws.onmessage = (event) => {
+          const endTime = performance.now();
+          const roundTrip = lastStartTime
+            ? (endTime - lastStartTime).toFixed(2)
+            : "N/A";
+          logMessage("Received: " + event.data + ` (${roundTrip}ms)`);
+          lastStartTime = null;
+        };
         ws.onerror = (error) => logMessage("Error: " + error.message);
       }
 
@@ -51,6 +59,7 @@
           return;
         }
 
+        lastStartTime = performance.now();
         const message = {
           type: "light_control",
           nodeId: document.getElementById("nodeId").value,

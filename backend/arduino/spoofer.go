@@ -3,6 +3,7 @@ package arduino
 import (
 	"encoding/json"
 	"log"
+	"time"
 
 	"github.com/anthony/network-topology-visualization/protocol"
 )
@@ -33,6 +34,7 @@ func (s *Spoofer) Stop() {
 
 // HandleMessage implements the MessageHandler interface
 func (s *Spoofer) HandleMessage(message []byte) {
+	start := time.Now()
 	var control protocol.LightControl
 	if err := json.Unmarshal(message, &control); err != nil {
 		log.Printf("Error parsing light control message: %v", err)
@@ -59,6 +61,11 @@ func (s *Spoofer) HandleMessage(message []byte) {
 		log.Printf("Unsupported command: %s", control.Command)
 	}
 
+	// Log timing
+	elapsed := time.Since(start)
+	log.Printf("Message processed in %v", elapsed)
+
+	// Log current states after update
 	log.Printf("Current node states:")
 	for id, nodeState := range s.nodeStates {
 		log.Printf("  %s: state=%s, color=%s", id, nodeState.State, nodeState.Color)
