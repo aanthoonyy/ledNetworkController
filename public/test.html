@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Arduino Spoofa</title>
+  </head>
+  <body>
+    <h1>Arduino Spoofa</h1>
+    <div id="status">WebSocket: Disconnected</div>
+
+    <div>
+      <input type="text" id="nodeId" value="node1" />
+      <select id="command">
+        <option value="on">On</option>
+        <option value="off">Off</option>
+        <option value="blink">Blink</option>
+        <option value="pulse">Pulse</option>
+      </select>
+      <select id="color">
+        <option value="red">Red</option>
+        <option value="green">Green</option>
+        <option value="blue">Blue</option>
+      </select>
+      <button onclick="sendLightControl()">Send</button>
+    </div>
+
+    <div id="log"></div>
+
+    <script>
+      let ws = null;
+      const status = document.getElementById("status");
+      const log = document.getElementById("log");
+
+      function connect() {
+        ws = new WebSocket("ws://" + window.location.host + "/ws");
+        ws.onopen = () => {
+          status.textContent = "WebSocket: Connected";
+          logMessage("Connected to server");
+        };
+        ws.onclose = () => {
+          status.textContent = "WebSocket: Disconnected";
+          logMessage("Disconnected from server");
+          setTimeout(connect, 5000);
+        };
+        ws.onmessage = (event) => logMessage("Received: " + event.data);
+        ws.onerror = (error) => logMessage("Error: " + error.message);
+      }
+
+      function sendLightControl() {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          logMessage("Error: WebSocket is not connected");
+          return;
+        }
+
+        const message = {
+          type: "light_control",
+          nodeId: document.getElementById("nodeId").value,
+          command: document.getElementById("command").value,
+          color: document.getElementById("color").value,
+        };
+
+        ws.send(JSON.stringify(message));
+        logMessage("Sent: " + JSON.stringify(message));
+      }
+
+      function logMessage(message) {
+        const entry = document.createElement("div");
+        entry.textContent = new Date().toLocaleTimeString() + " - " + message;
+        log.appendChild(entry);
+      }
+
+      connect();
+    </script>
+  </body>
+</html>
+
+<!-- Thanks you ChatGpt :D -->

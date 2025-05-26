@@ -3,6 +3,7 @@ package wshub
 import (
 	"sync"
 
+	"github.com/anthony/network-topology-visualization/protocol"
 	"github.com/gorilla/websocket"
 )
 
@@ -13,6 +14,7 @@ type Hub struct {
 	Register   chan *Client
 	Unregister chan *Client
 	mu         sync.Mutex
+	arduino    protocol.MessageHandler
 }
 
 // Client represents a connected WebSocket client
@@ -22,13 +24,19 @@ type Client struct {
 }
 
 // NewHub creates a new hub instance
-func NewHub() *Hub {
+func NewHub(arduino protocol.MessageHandler) *Hub {
 	return &Hub{
 		Clients:    make(map[*Client]bool),
 		Messages:   make(chan []byte),
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
+		arduino:    arduino,
 	}
+}
+
+// Broadcast implements the MessageBroadcaster interface
+func (h *Hub) Broadcast(message []byte) {
+	h.Messages <- message
 }
 
 // Run starts the hub's message handling loop
@@ -59,4 +67,10 @@ func (h *Hub) Run() {
 			h.mu.Unlock()
 		}
 	}
+}
+
+func (h *Hub) SetArduino(arduino protocol.MessageHandler) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.arduino = arduino
 }

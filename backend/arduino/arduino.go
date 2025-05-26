@@ -1,25 +1,28 @@
 package arduino
 
 import (
+	"encoding/json"
 	"log"
 	"time"
 
-	"github.com/anthony/network-topology-visualization/wshub"
+	"github.com/anthony/network-topology-visualization/protocol"
 	"github.com/tarm/serial"
 )
 
 // ArduinoController handles communication with the Arduino
 type ArduinoController struct {
-	port     *serial.Port
-	hub      *wshub.Hub
-	isActive bool
+	port        *serial.Port
+	broadcaster protocol.MessageBroadcaster
+	isActive    bool
+	nodeStates  map[string]protocol.ArduinoState
 }
 
 // NewArduinoController creates a new Arduino controller
-func NewArduinoController(hub *wshub.Hub) *ArduinoController {
+func NewArduinoController(broadcaster protocol.MessageBroadcaster) *ArduinoController {
 	return &ArduinoController{
-		hub:      hub,
-		isActive: false,
+		broadcaster: broadcaster,
+		isActive:    false,
+		nodeStates:  make(map[string]protocol.ArduinoState),
 	}
 }
 
@@ -61,9 +64,16 @@ func (ac *ArduinoController) readLoop() {
 		}
 
 		if n > 0 {
-			// Process the received data
-			// For now, just broadcast it to all WebSocket clients
-			ac.hub.Messages <- buf[:n]
+			// Try to parse as ArduinoState
+			var state protocol.ArduinoState
+			if err := json.Unmarshal(buf[:n], &state); err == nil {
+				ac.nodeStates[state.NodeID] = state
+				// Broadcast state update to all clients
+				ac.broadcaster.Broadcast(buf[:n])
+			} else {
+				// If not a state update, just broadcast raw message
+				ac.broadcaster.Broadcast(buf[:n])
+			}
 		}
 	}
 }
@@ -76,4 +86,50 @@ func (ac *ArduinoController) SendCommand(cmd string) error {
 
 	_, err := ac.port.Write([]byte(cmd + "\n"))
 	return err
+}
+
+// ControlLight sends a light control command to the Arduino
+func (ac *ArduinoController) ControlLight(nodeID, command, color string) error {
+	if !ac.isActive {
+		return nil
+	}
+
+	control := protocol.LightControl{
+		Type:    protocol.TypeLightControl,
+		NodeID:  nodeID,
+		Command: command,
+		Color:   color,
+	}
+
+	data, err := json.Marshal(control)
+	if err != nil {
+		return err
+	}
+
+	_, err = ac.port.Write(append(data, '\n'))
+	return err
+}
+
+// GetNodeState returns the current state of a node's light
+func (ac *ArduinoController) GetNodeState(nodeID string) (protocol.ArduinoState, bool) {
+	state, exists := ac.nodeStates[nodeID]
+	return state, exists
+}
+
+// GetAllNodeStates returns the states of all nodes
+func (ac *ArduinoController) GetAllNodeStates() map[string]protocol.ArduinoState {
+	return ac.nodeStates
+}
+
+// HandleMessage implements the MessageHandler interface
+func (ac *ArduinoController) HandleMessage(message []byte) {
+	var control protocol.LightControl
+	if err := json.Unmarshal(message, &control); err != nil {
+		log.Printf("Error parsing light control message: %v", err)
+		return
+	}
+
+	if err := ac.ControlLight(control.NodeID, control.Command, control.Color); err != nil {
+		log.Printf("Error controlling light: %v", err)
+	}
 }
