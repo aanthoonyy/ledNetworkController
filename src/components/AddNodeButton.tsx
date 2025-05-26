@@ -1,9 +1,11 @@
 import { Button } from "@mui/material";
 import { useNetworkStore } from "../store/networkStore";
+import lightControlStore from "../store/lightControlStore";
 
 export const AddNodeButton = () => {
   const addPurpleNode = useNetworkStore((state) => state.addPurpleNode);
-
+  const allMessages = lightControlStore.getNodesArray();
+  console.log(allMessages);
   return (
     <Button
       variant="contained"
