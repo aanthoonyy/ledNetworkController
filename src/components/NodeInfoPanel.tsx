@@ -1,5 +1,10 @@
 import React from "react";
-import type { NodeInfoPanelProps } from "../Interface/INetwork";
+import {
+  colorOptions,
+  type NodeColor,
+  type NodeInfoPanelProps,
+  type NodeState,
+} from "../Interface/INodeInfo";
 import {
   Sheet,
   IconButton,
@@ -13,17 +18,6 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import CircleIcon from "@mui/icons-material/Circle";
 
-type NodeState = "on" | "off" | "blinking" | "pulse";
-type NodeColor = "primary" | "success" | "warning" | "danger" | "neutral";
-
-const colorOptions = [
-  { value: "primary", label: "Blue" },
-  { value: "success", label: "Green" },
-  { value: "warning", label: "Yellow" },
-  { value: "danger", label: "Red" },
-  { value: "neutral", label: "Gray" },
-];
-
 const StateIndicator = ({
   state,
   color,
@@ -34,16 +28,26 @@ const StateIndicator = ({
   return (
     <Chip
       variant="soft"
-      color={color}
+      sx={{
+        bgcolor: state === "on" ? color : "#00000F",
+        color: "#fff",
+        "&:hover": {
+          bgcolor: color,
+          opacity: 0.9,
+        },
+      }}
       startDecorator={
         <CircleIcon
           sx={{
             fontSize: "0.8rem",
+            color: "#fff",
             animation:
               state === "blinking"
                 ? "blink 1s infinite"
                 : state === "pulse"
                 ? "pulse 2s infinite"
+                : state === "on"
+                ? "none"
                 : "none",
             "@keyframes blink": {
               "0%, 100%": { opacity: 1 },
@@ -53,6 +57,9 @@ const StateIndicator = ({
               "0%": { transform: "scale(1)" },
               "50%": { transform: "scale(1.2)" },
               "100%": { transform: "scale(1)" },
+            },
+            none: {
+              display: "none",
             },
           }}
         />
@@ -66,7 +73,7 @@ const StateIndicator = ({
 export const NodeInfoPanel = ({ node, onClose }: NodeInfoPanelProps) => {
   if (!node) return null;
   const [state, setState] = React.useState<NodeState>("on");
-  const [color, setColor] = React.useState<NodeColor>("primary");
+  const [color, setColor] = React.useState<NodeColor>("#2196f3");
 
   return (
     <Sheet
@@ -125,9 +132,6 @@ export const NodeInfoPanel = ({ node, onClose }: NodeInfoPanelProps) => {
           {node.name}
         </Typography>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-          <Typography level="body-sm" textColor="neutral.500">
-            {node.type || "Unknown Device Type"}
-          </Typography>
           <StateIndicator state={state} color={color} />
         </Stack>
 
