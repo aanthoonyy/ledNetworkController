@@ -36,7 +36,11 @@ func NewHub(arduino protocol.MessageHandler) *Hub {
 
 // Broadcast implements the MessageBroadcaster interface
 func (h *Hub) Broadcast(message []byte) {
-	h.Messages <- message
+	select {
+	case h.Messages <- message:
+	default:
+		break
+	}
 }
 
 // Run starts the hub's message handling loop

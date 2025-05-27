@@ -16,15 +16,45 @@ type Spoofer struct {
 
 // NewSpoofer creates a new Arduino spoofer
 func NewSpoofer(broadcaster protocol.MessageBroadcaster) *Spoofer {
-	return &Spoofer{
+	spoofer := &Spoofer{
 		broadcaster: broadcaster,
 		nodeStates:  make(map[string]protocol.ArduinoState),
 	}
+
+	initialStates := []protocol.ArduinoState{
+		{
+			Type:   protocol.TypeArduinoState,
+			NodeID: "node1",
+			State:  "off",
+			Color:  "red",
+		},
+		{
+			Type:   protocol.TypeArduinoState,
+			NodeID: "node2",
+			State:  "on",
+			Color:  "green",
+		},
+		{
+			Type:   protocol.TypeArduinoState,
+			NodeID: "node3",
+			State:  "on",
+			Color:  "blue",
+		},
+	}
+
+	for _, state := range initialStates {
+		spoofer.nodeStates[state.NodeID] = state
+	}
+
+	return spoofer
 }
 
 // Start begins the spoofer
 func (s *Spoofer) Start() {
 	log.Println("Arduino spoofer started")
+	for _, state := range s.nodeStates {
+		s.broadcastState(state)
+	}
 }
 
 // Stop halts the spoofer

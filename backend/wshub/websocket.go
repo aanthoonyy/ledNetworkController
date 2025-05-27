@@ -52,6 +52,27 @@ func (h *Hub) readPump(c *Client) {
 			break
 		}
 
+		var request map[string]string
+		if err := json.Unmarshal(message, &request); err == nil && request["type"] == "request_states" {
+			if arduino, ok := h.arduino.(interface {
+				GetAllNodeStates() map[string]protocol.ArduinoState
+			}); ok {
+				states := arduino.GetAllNodeStates()
+				stateArray := make([]protocol.ArduinoState, 0, len(states))
+				for _, state := range states {
+					stateArray = append(stateArray, state)
+				}
+				response := map[string]interface{}{
+					"type":   "all_states",
+					"states": stateArray,
+				}
+				if data, err := json.Marshal(response); err == nil {
+					c.Send <- data
+				}
+			}
+			continue
+		}
+
 		var control protocol.LightControl
 		if err := json.Unmarshal(message, &control); err == nil && control.Type == protocol.TypeLightControl {
 			if h.arduino != nil {

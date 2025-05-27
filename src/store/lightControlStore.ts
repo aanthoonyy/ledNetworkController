@@ -16,6 +16,7 @@ class LightControlStore {
 
     this.ws.onopen = () => {
       console.log("Connected to server");
+      this.ws?.send(JSON.stringify({ type: "request_states" }));
       this.logNodeStates();
     };
 
@@ -32,6 +33,15 @@ class LightControlStore {
           if (this.onNodeUpdate) {
             this.onNodeUpdate(message.nodeId, message.state, message.color);
           }
+        } else if (message.type === "all_states") {
+          const states = message.states as NodeState[];
+          states.forEach((state) => {
+            this.updateNodeState(state.nodeId, state.state, state.color);
+            if (this.onNodeUpdate) {
+              this.onNodeUpdate(state.nodeId, state.state, state.color);
+            }
+          });
+          this.logNodeStates();
         }
       } catch (e) {
         console.error("Failed to parse message:", e);
