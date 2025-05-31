@@ -1,14 +1,33 @@
-#define LED_PIN 6
+#include <ArduinoJson.h>
+
+#define LED_PIN 5
 
 void setup() {
-  pinMode(LED_PIN, OUTPUT);
   Serial.begin(9600);
+  pinMode(LED_PIN, OUTPUT);
 }
 
 void loop() {
-  
-  digitalWrite(LED_PIN, HIGH);
-  delay(1000);
-  digitalWrite(LED_PIN, LOW);
-  delay(1000);
-} 
+  if (Serial.available() > 0) {
+    StaticJsonDocument<200> doc;
+    DeserializationError error = deserializeJson(doc, Serial);
+
+    if (!error && doc["type"] == "light_control") {
+      String command = doc["command"].as<String>();
+      
+      if (command == "on") {
+        analogWrite(LED_PIN, 255);
+      } else if (command == "off") {
+        analogWrite(LED_PIN, 0);
+      }
+      
+      StaticJsonDocument<200> response;
+      response["type"] = "arduino_state";
+      response["nodeId"] = "node1";
+      response["state"] = command;
+      
+      serializeJson(response, Serial);
+      Serial.println();
+    }
+  }
+}
