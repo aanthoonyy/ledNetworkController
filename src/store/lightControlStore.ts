@@ -1,8 +1,15 @@
-import type { NodeState } from "../Interface/ILightControl";
+import type {
+  NodeState,
+  LightControlMessage,
+} from "../Interface/ILightControl";
 
 class LightControlStore {
   private ws: WebSocket | null = null;
   private nodeStates: Record<string, NodeState> = {};
+  private nodeSubscribers: Map<
+    string,
+    Set<(state: "on" | "off", color: string) => void>
+  > = new Map();
   public onNodeUpdate:
     | ((nodeId: string, state: "on" | "off", color: string) => void)
     | null = null;
@@ -56,6 +63,15 @@ class LightControlStore {
       color,
       lastUpdated: new Date().toLocaleTimeString(),
     };
+
+    const subscribers = this.nodeSubscribers.get(nodeId);
+    if (subscribers) {
+      subscribers.forEach((callback) => callback(state, color));
+    }
+
+    if (this.onNodeUpdate) {
+      this.onNodeUpdate(nodeId, state, color);
+    }
   }
 
   public logNodeStates(): void {
@@ -81,6 +97,63 @@ class LightControlStore {
       node.color,
       node.lastUpdated,
     ]);
+  }
+
+  public sendMessage(message: LightControlMessage) {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(message));
+    } else {
+      console.error("WebSocket is not connected");
+    }
+  }
+
+  public subscribeToNode(
+    nodeId: string,
+    callback: (state: "on" | "off", color: string) => void
+  ) {
+    if (!this.nodeSubscribers.has(nodeId)) {
+      this.nodeSubscribers.set(nodeId, new Set());
+    }
+    this.nodeSubscribers.get(nodeId)!.add(callback);
+
+    // Immediately notify with current state
+    const currentState = this.nodeStates[nodeId];
+    if (currentState) {
+      callback(currentState.state, currentState.color);
+    }
+
+    return () => {
+      const subscribers = this.nodeSubscribers.get(nodeId);
+      if (subscribers) {
+        subscribers.delete(callback);
+        if (subscribers.size === 0) {
+          this.nodeSubscribers.delete(nodeId);
+        }
+      }
+    };
+  }
+
+  public sendNodeCommand(
+    nodeId: string,
+    command: "on" | "off" | "blink" | "pulse",
+    color: "red" | "green" | "blue"
+  ) {
+    const message: LightControlMessage = {
+      type: "light_control",
+      nodeId,
+      command,
+      color,
+    };
+    this.sendMessage(message);
+  }
+
+  public getNodeState(
+    nodeId: string
+  ): { state: "on" | "off"; color: string } | null {
+    const nodeState = this.nodeStates[nodeId];
+    return nodeState
+      ? { state: nodeState.state, color: nodeState.color }
+      : null;
   }
 }
 

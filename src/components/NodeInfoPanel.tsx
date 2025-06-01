@@ -1,4 +1,3 @@
-import React from "react";
 import {
   colorOptions,
   type NodeColor,
@@ -17,6 +16,7 @@ import {
 } from "@mui/joy";
 import CloseIcon from "@mui/icons-material/Close";
 import CircleIcon from "@mui/icons-material/Circle";
+import { useNodeInfoViewModel } from "../viewModels/NodeInfoViewModel";
 
 const StateIndicator = ({
   state,
@@ -72,8 +72,9 @@ const StateIndicator = ({
 
 export const NodeInfoPanel = ({ node, onClose }: NodeInfoPanelProps) => {
   if (!node) return null;
-  const [state, setState] = React.useState<NodeState>("on");
-  const [color, setColor] = React.useState<NodeColor>("#2196f3");
+
+  const { state, color, handleStateChange, handleColorChange } =
+    useNodeInfoViewModel(node);
 
   return (
     <Sheet
@@ -142,7 +143,7 @@ export const NodeInfoPanel = ({ node, onClose }: NodeInfoPanelProps) => {
             </Typography>
             <Select
               value={state}
-              onChange={(_, newValue) => setState(newValue as NodeState)}
+              onChange={(_, newValue) => handleStateChange(newValue)}
               size="sm"
               sx={{ width: "100%" }}
             >
@@ -159,7 +160,7 @@ export const NodeInfoPanel = ({ node, onClose }: NodeInfoPanelProps) => {
             </Typography>
             <Select
               value={color}
-              onChange={(_, newValue) => setColor(newValue as NodeColor)}
+              onChange={(_, newValue) => handleColorChange(newValue)}
               size="sm"
               sx={{ width: "100%" }}
             >
