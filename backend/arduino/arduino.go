@@ -1,6 +1,7 @@
 package arduino
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
 	"time"
@@ -55,7 +56,9 @@ func (ac *ArduinoController) Disconnect() {
 
 // readLoop continuously reads from the Arduino
 func (ac *ArduinoController) readLoop() {
-	buf := make([]byte, 128)
+	buf := make([]byte, 1024)
+	messageBuf := make([]byte, 0, 1024)
+
 	for ac.isActive {
 		n, err := ac.port.Read(buf)
 		if err != nil {
@@ -64,15 +67,24 @@ func (ac *ArduinoController) readLoop() {
 		}
 
 		if n > 0 {
-			// Try to parse as ArduinoState
-			var state protocol.ArduinoState
-			if err := json.Unmarshal(buf[:n], &state); err == nil {
-				ac.nodeStates[state.NodeID] = state
-				// Broadcast state update to all clients
-				ac.broadcaster.Broadcast(buf[:n])
-			} else {
-				// If not a state update, just broadcast raw message
-				ac.broadcaster.Broadcast(buf[:n])
+			messageBuf = append(messageBuf, buf[:n]...)
+
+			for {
+				newlineIndex := bytes.IndexByte(messageBuf, '\n')
+				if newlineIndex == -1 {
+					break
+				}
+
+				message := messageBuf[:newlineIndex]
+				messageBuf = messageBuf[newlineIndex+1:]
+
+				var state protocol.ArduinoState
+				if err := json.Unmarshal(message, &state); err == nil {
+					ac.nodeStates[state.NodeID] = state
+					ac.broadcaster.Broadcast(message)
+				} else {
+					ac.broadcaster.Broadcast(message)
+				}
 			}
 		}
 	}

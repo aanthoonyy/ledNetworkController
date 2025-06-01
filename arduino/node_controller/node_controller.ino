@@ -16,7 +16,7 @@ void loop() {
       String command = doc["command"].as<String>();
       
       if (command == "on") {
-        analogWrite(LED_PIN, 255);
+        analogWrite(LED_PIN, 45);
       } else if (command == "off") {
         analogWrite(LED_PIN, 0);
       }
@@ -25,6 +25,7 @@ void loop() {
       response["type"] = "arduino_state";
       response["nodeId"] = "node1";
       response["state"] = command;
+      response["color"] = "green";
       
       serializeJson(response, Serial);
       Serial.println();
