@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { Node } from "../Interface/INetwork";
 import type { NodeState, NodeColor } from "../Interface/INodeInfo";
-import { nodeSubscriptions } from "../store/NodeSubscriptions";
+import { nodeSubscriptions } from "../subscriptions/NodeSubscriptions";
 import lightControlStore from "../store/lightControlStore";
 
 export const useNodeInfoViewModel = (node: Node | null) => {
